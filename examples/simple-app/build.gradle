@@ -1,0 +1,77 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example'
+version = '1.0.0'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+}
+
+application {
+    mainClass = 'com.example.SimpleApp'
+}
+
+// 添加一个运行时使用Agent的任务
+task runWithAgent(type: JavaExec) {
+    group = 'application'
+    description = 'Runs the application with JanusGuard Agent'
+    
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.SimpleApp'
+    
+    // 设置JVM参数，指定Agent路径
+    jvmArgs = ['-javaagent:../../build/libs/janusguard-agent-1.0.0-SNAPSHOT.jar']
+    
+    // 添加Agent配置参数
+    jvmArgs += ['-Djava.util.logging.config.file=logging.properties']
+    
+    // 创建必要的日志目录
+    doFirst {
+        mkdir '../../logs'
+    }
+}
+
+// 添加一个使用java命令直接运行的任务
+task runDirectly(type: Exec) {
+    group = 'application'
+    description = 'Runs the application using direct java command'
+    
+    dependsOn classes
+    
+    def classpath = sourceSets.main.runtimeClasspath.asPath
+    
+    commandLine 'java', '-cp', classpath, 'com.example.SimpleApp'
+}
+
+// 添加一个更详细的测试任务
+task runDetailedTest(type: JavaExec) {
+    group = 'application'
+    description = 'Runs a more detailed test with the JanusGuard Agent'
+    
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.SimpleApp'
+    
+    // 使用自定义配置文件
+    jvmArgs = [
+        '-javaagent:../../build/libs/janusguard-agent-1.0.0-SNAPSHOT.jar=config=./src/main/resources/janusguard-test.yaml',
+        '-Djava.util.logging.config.file=logging.properties'
+    ]
+    
+    // 创建必要的目录
+    doFirst {
+        mkdir '../../logs'
+    }
+}
+
+test {
+    useJUnitPlatform()
+} 

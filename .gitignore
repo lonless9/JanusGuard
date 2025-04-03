@@ -1,0 +1,80 @@
+# Gradle 构建目录
+.gradle/
+build/
+out/
+classes/
+
+# Gradle wrapper 历史文件
+.gradletasknamecache
+
+# Eclipse 配置文件
+.classpath
+.project
+.settings/
+bin/
+
+# IntelliJ IDEA 配置文件
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# NetBeans 配置文件
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# VS Code 配置文件
+.vscode/
+.code-workspace
+
+# Mac OS 系统文件
+.DS_Store
+
+# Windows 系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 日志文件
+*.log
+logs/
+
+# 本地配置覆盖
+application-local.yml
+application-local.properties
+
+# 敏感信息
+*.key
+*.pem
+*.p12
+*.jks
+
+# 临时测试文件
+**/tmp/
+**/temp/
+
+# 测试报告
+/test-output/
+
+# 编译后的class文件
+*.class
+
+# 包文件
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+# 但是保留gradle wrapper jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# JVM崩溃日志
+hs_err_pid*
+
+# 项目特定文件
+janusguard-events.log 

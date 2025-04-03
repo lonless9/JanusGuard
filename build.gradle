@@ -1,0 +1,71 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group = 'com.janusguard'
+version = '1.0.0-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 字节码处理
+    implementation 'net.bytebuddy:byte-buddy:1.14.4'
+    implementation 'net.bytebuddy:byte-buddy-agent:1.14.4'
+    
+    // 配置处理
+    implementation 'org.yaml:snakeyaml:2.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.0'
+    
+    // 高性能队列
+    implementation 'com.lmax:disruptor:3.4.4'
+    
+    // 日志
+    implementation 'org.slf4j:slf4j-api:2.0.7'
+    implementation 'ch.qos.logback:logback-classic:1.4.7'
+    
+    // 网络通信
+    implementation 'io.grpc:grpc-netty-shaded:1.57.0'
+    implementation 'io.grpc:grpc-protobuf:1.57.0'
+    implementation 'io.grpc:grpc-stub:1.57.0'
+    
+    // 工具库
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'commons-io:commons-io:2.13.0'
+    implementation 'com.google.guava:guava:31.1-jre'
+    
+    // 测试
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+    testImplementation 'org.mockito:mockito-core:5.3.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    manifest {
+        attributes(
+                'Manifest-Version': '1.0',
+                'Premain-Class': 'com.janusguard.agent.JanusAgent',
+                'Agent-Class': 'com.janusguard.agent.JanusAgent',
+                'Can-Redefine-Classes': 'true',
+                'Can-Retransform-Classes': 'true'
+        )
+    }
+}
+
+// 构建包含所有依赖的完整jar
+shadowJar {
+    archiveBaseName.set('janusguard-agent')
+    archiveClassifier.set('')
+    archiveVersion.set(project.version.toString())
+    mergeServiceFiles()
+}
+
+tasks.build.dependsOn tasks.shadowJar 
