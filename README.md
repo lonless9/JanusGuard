@@ -42,15 +42,22 @@ JanusGuard是一个Java应用运行时安全监控系统，通过Java Agent技�
   - 命令执行 (`Runtime.exec`, `ProcessBuilder.start`)
   - 文件操作 (`FileInputStream`, `FileOutputStream`, `RandomAccessFile`)
   - 反射调用 (`Method.invoke`)
+  - 内存木马检测:
+    - 类加载监控 (`ClassLoader.defineClass`)
+    - Unsafe内存操作 (`sun.misc.Unsafe`)
+    - 动态代理创建 (`java.lang.reflect.Proxy`)
+    - JNI库加载 (`System.load`, `System.loadLibrary`)
 
 - **📊 事件处理:** 
   - 事件收集与过滤
   - 异步队列处理
   - 本地存储记录
+  - 内存木马行为分析与告警
 
 - **⚙️ 配置系统:** 
   - YAML配置文件支持
   - 命令行参数设置
+  - 内存木马检测配置
 
 ## 🏛️ 架构设计
 
@@ -117,6 +124,11 @@ JanusGuard支持以下配置选项：
 | `monitor.command` | 启用命令执行监控 | `true` |
 | `monitor.file` | 启用文件操作监控 | `true` |
 | `monitor.reflection` | 启用反射调用监控 | `true` |
+| `monitor.memory-trojan` | 启用内存木马检测 | `true` |
+| `monitor.memory-trojan.class-loading` | 启用类加载监控 | `true` |
+| `monitor.memory-trojan.unsafe` | 启用Unsafe操作监控 | `true` |
+| `monitor.memory-trojan.dynamic-proxy` | 启用动态代理监控 | `true` |
+| `monitor.memory-trojan.jni` | 启用JNI操作监控 | `true` |
 | `sampling.rate` | 事件采样率 (0-100) | `100` |
 | `report.mode` | 上报模式 (file/http/grpc) | `file` |
 | `log.level` | 日志级别 | `INFO` |
@@ -189,7 +201,8 @@ JanusGuard基于以下核心技术：
    
 2. **🚧 阶段二: 增强监控与性能优化** (进行中)
    * 网络流量监控
-   * 动态类加载监控
+   * 动态类加载监控 ✓
+   * 内存木马检测 ✓
    * 高性能事件处理
    * 规则引擎设计
    
