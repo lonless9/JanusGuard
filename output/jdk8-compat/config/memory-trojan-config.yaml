@@ -1,0 +1,63 @@
+# JanusGuard 内存木马监控配置示例
+
+# 是否启用内存木马监控
+monitors:
+  memory-trojan:
+    # 总体启用开关
+    enabled: true
+    
+    # 日志级别 (DEBUG, INFO, WARN, ERROR)
+    log-level: INFO
+    
+    # 类加载监控
+    class-loading:
+      enabled: true
+      # 关注的可疑类名模式（正则表达式）
+      suspicious-patterns:
+        - ".*\\$\\$.*"
+        - ".*[0-9a-f]{8,}.*"
+        - "sun\\..*"
+        - "jdk\\.internal\\..*"
+      # 忽略的安全类名（防止误报）
+      ignore-patterns:
+        - "com\\.janusguard\\..*"
+        - "org\\.springframework\\..*"
+        - "org\\.hibernate\\..*"
+    
+    # Unsafe内存操作监控
+    unsafe:
+      enabled: true
+      # 监控的方法列表
+      monitored-methods:
+        - "putAddress"
+        - "putObject"
+        - "allocateInstance"
+        - "defineClass"
+        - "defineAnonymousClass"
+        - "allocateMemory"
+        - "copyMemory"
+    
+    # 动态代理监控
+    dynamic-proxy:
+      enabled: true
+      # 检测危险代理接口
+      suspicious-interfaces:
+        - "java.rmi."
+        - "javax.management."
+        - "java.lang.ClassLoader"
+    
+    # JNI操作监控
+    jni:
+      enabled: true
+      # 可疑库路径模式
+      suspicious-paths:
+        - "/tmp/.*"
+        - ".*Temp.*"
+        - ".*[0-9a-f]{8,}.*"
+        - ".*hack.*"
+        - ".*exploit.*"
+      # 库路径白名单
+      whitelist-paths:
+        - "/usr/lib/.*"
+        - "/lib/.*"
+        - "/opt/.*" 

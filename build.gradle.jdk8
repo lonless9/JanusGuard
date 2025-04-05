@@ -1,0 +1,69 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+}
+
+group = 'com.janusguard'
+version = '1.0.0-SNAPSHOT'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 字节码处理 - 使用确认兼容JDK 8的版本
+    implementation 'net.bytebuddy:byte-buddy:1.7.11'
+    implementation 'net.bytebuddy:byte-buddy-agent:1.7.11'
+    
+    // 配置处理 - 降级到JDK 8完全兼容的版本
+    implementation 'org.yaml:snakeyaml:1.23'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.10'
+    
+    // 高性能队列
+    implementation 'com.lmax:disruptor:3.4.2'
+    
+    // 日志 - 降级到JDK 8兼容版本
+    implementation 'org.slf4j:slf4j-api:1.7.25'
+    implementation 'ch.qos.logback:logback-classic:1.2.3'
+    
+    // 工具库 - 降级到JDK 8兼容版本
+    implementation 'org.apache.commons:commons-lang3:3.8.1'
+    implementation 'commons-io:commons-io:2.6'
+    implementation 'com.google.guava:guava:27.1-jre'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Manifest-Version': '1.0',
+                'Premain-Class': 'com.janusguard.agent.JanusAgent',
+                'Agent-Class': 'com.janusguard.agent.JanusAgent',
+                'Can-Redefine-Classes': 'true',
+                'Can-Retransform-Classes': 'true'
+        )
+    }
+}
+
+// 构建包含所有依赖的完整jar
+shadowJar {
+    archiveBaseName.set('janusguard-agent-jdk8')
+    archiveClassifier.set('')
+    archiveVersion.set(project.version.toString())
+    mergeServiceFiles()
+}
+
+tasks.build.dependsOn tasks.shadowJar
+
+// 确保使用严格的Java 8编译选项
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:-options'
+    options.compilerArgs << '-source'
+    options.compilerArgs << '1.8'
+    options.compilerArgs << '-target'
+    options.compilerArgs << '1.8'
+}
+

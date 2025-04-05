@@ -1,0 +1,53 @@
+# JanusGuard 默认配置文件 - JDK 8兼容版
+
+# Agent基本配置
+agent:
+  enabled: true
+  log-level: INFO
+
+# 转换器配置
+transformer:
+  cache-size: 10000
+  excluded-packages: java.lang,sun.,com.sun.,com.janusguard.
+  included-packages: 
+
+# 监控点配置
+monitors:
+  # 命令执行监控
+  command-execution:
+    enabled: true
+    
+  # 文件操作监控
+  file-operations:
+    enabled: true
+    
+  # 反射监控
+  reflection:
+    enabled: true
+
+  # 内存木马监控
+  memory-trojan:
+    enabled: true
+    class-loading:
+      enabled: true
+    unsafe:
+      enabled: true
+    dynamic-proxy:
+      enabled: true
+    jni:
+      enabled: true
+
+# 事件处理配置
+event-processing:
+  queue-size: 5000
+  processor-threads: 2
+  batch-size: 100
+  flush-interval-ms: 1000
+
+# 报告配置
+reporting:
+  enabled: true
+  mode: file
+  file:
+    path: ./logs/janusguard-events.log
+

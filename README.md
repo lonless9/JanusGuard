@@ -11,7 +11,7 @@
 
 ## 📋 概述
 
-JanusGuard是一个Java应用运行时安全监控系统，通过Java Agent技术和字节码转换实现对应用行为的监控和安全风险检测，旨在提供一种低侵入、可配置的安全防护方案。
+JanusGuard是一个Java应用运行时安全监控系统，通过Java Agent技术和字节码转换实现对应用行为的监控和安全风险检测，旨在提供一种低侵入、可配置的安全防护方案。它能够监控和防御各种运行时安全威胁，包括命令注入、文件操作风险以及内存木马攻击。
 
 ## 🔍 核心理念
 
@@ -137,6 +137,8 @@ JanusGuard支持以下配置选项：
 
 ## 🛠️ 构建项目
 
+### 完整版本构建
+
 项目使用Gradle构建：
 
 ```bash
@@ -155,10 +157,91 @@ cd janusguard
 - `janusguard-agent-1.0.0-SNAPSHOT.jar` - 包含所有依赖的完整Agent包
 - `jvm_agent-1.0.0-SNAPSHOT.jar` - 不包含依赖的基础包
 
+### JDK 8兼容版本构建
+
+对于需要在JDK 8环境中使用的用户，我们提供了专门的轻量级兼容版本：
+
+```bash
+# 切换到JDK 8兼容版目录
+cd output/jdk8-final
+
+# 编译SimpleJdk8Agent和辅助类
+javac -source 1.8 -target 1.8 SimpleJdk8Agent.java JanusGuardHelper.java
+
+# 创建JAR包
+jar cmf MANIFEST.MF janusguard-jdk8-simple.jar SimpleJdk8Agent*.class JanusGuardHelper.class
+```
+
+也可以直接使用下列一行命令完成编译和打包：
+```bash
+cd output/jdk8-final && javac -source 1.8 -target 1.8 SimpleJdk8Agent.java JanusGuardHelper.java && jar cmf MANIFEST.MF janusguard-jdk8-simple.jar SimpleJdk8Agent*.class JanusGuardHelper.class
+```
+
+## 🏃‍♂️ 运行方法
+
+### 使用完整版Agent
+
+```bash
+# 基本用法
+java -javaagent:build/libs/janusguard-agent-1.0.0-SNAPSHOT.jar -jar your-application.jar
+
+# 指定配置文件
+java -javaagent:build/libs/janusguard-agent-1.0.0-SNAPSHOT.jar=config=path/to/janusguard.yaml -jar your-application.jar
+
+# 指定日志级别
+java -javaagent:build/libs/janusguard-agent-1.0.0-SNAPSHOT.jar=log.level=DEBUG -jar your-application.jar
+```
+
+### 使用JDK 8兼容版Agent
+
+```bash
+# 基本用法
+java -javaagent:output/jdk8-final/janusguard-jdk8-simple.jar -jar your-application.jar
+
+# 使用配置文件
+java -javaagent:output/jdk8-final/janusguard-jdk8-simple.jar=config=output/jdk8-final/janusguard-config.properties -jar your-application.jar
+
+# 自定义日志文件位置
+java -javaagent:output/jdk8-final/janusguard-jdk8-simple.jar=log=custom-janusguard.log -jar your-application.jar
+
+# 组合配置（配置文件和日志位置）
+java -javaagent:output/jdk8-final/janusguard-jdk8-simple.jar=config=janusguard-config.properties,log=custom-janusguard.log -jar your-application.jar
+```
+
+### 应用程序集成
+
+对于无法直接使用Java Agent的环境，可以通过代码集成方式使用JanusGuard：
+
+```java
+// 检查JanusGuard是否已安装
+if (System.getProperty("janusguard.installed") != null) {
+    // 使用JanusGuardHelper执行命令，确保安全监控
+    Process process = JanusGuardHelper.execCommand("your-command");
+    
+    // 或者直接调用SimpleJdk8Agent API
+    try {
+        Class<?> agentClass = Class.forName("SimpleJdk8Agent");
+        java.lang.reflect.Method monitorMethod = 
+            agentClass.getMethod("beforeCommandExecution", String.class);
+        monitorMethod.invoke(null, "your-command");
+        
+        // 执行原始命令
+        Process process = Runtime.getRuntime().exec("your-command");
+        
+        // 可选: 执行后也记录
+        java.lang.reflect.Method afterMethod = 
+            agentClass.getMethod("afterCommandExecution", String.class, int.class);
+        afterMethod.invoke(null, "your-command", process.waitFor());
+    } catch (Exception e) {
+        // 处理异常
+    }
+}
+```
+
 ## 📂 项目结构
 
 ```
-jvm_agent/
+janusguard/
 ├── src/                             # 源代码
 │   ├── main/java/com/janusguard/
 │   │   ├── agent/                   # Agent主体
@@ -168,6 +251,12 @@ jvm_agent/
 │   │   ├── config/                  # 配置管理
 │   │   └── common/                  # 公共工具
 │   └── test/                        # 测试代码
+├── output/jdk8-final/               # JDK 8兼容版
+│   ├── SimpleJdk8Agent.java         # JDK 8兼容版Agent
+│   ├── JanusGuardHelper.java        # 集成辅助类
+│   ├── MANIFEST.MF                  # JAR清单文件
+│   ├── janusguard-config.properties # 配置文件
+│   └── README.md                    # JDK 8版说明
 ├── examples/                        # 示例应用
 ├── docs/                            # 文档
 └── build.gradle                     # 构建配置
@@ -183,6 +272,11 @@ JanusGuard基于以下核心技术：
 - **🔄 [Jackson](https://github.com/FasterXML/jackson)**: JSON处理
 - **🌐 [gRPC](https://grpc.io/)**: 高性能RPC框架(可选)
 
+JDK 8兼容版使用的技术：
+- **📝 [Java Logging API](https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html)**: 内置日志框架
+- **🔧 [Java Instrumentation API](https://docs.oracle.com/javase/8/docs/api/java/lang/instrument/package-summary.html)**: JVM计数分析
+- **🛡️ [Java Security Manager](https://docs.oracle.com/javase/8/docs/api/java/lang/SecurityManager.html)**: 安全管理器机制
+
 ## 🌟 特色功能
 
 1. **🔄 自适应监控:** 支持根据应用行为特征调整监控策略
@@ -191,6 +285,8 @@ JanusGuard基于以下核心技术：
 4. **🧩 规则表达式:** 支持灵活的规则定义和匹配方式
 5. **🔄 双向通信:** 支持与控制中心双向通信，接收策略更新
 6. **📊 性能优化:** 采用多种性能优化技术，降低监控开销
+7. **🔐 命令执行保护:** 检测并阻止危险命令执行，防止命令注入攻击
+8. **📱 多种集成方式:** 提供Agent加载和API调用两种集成方式，适应不同场景需求
 
 ## 📅 开发路线
 
@@ -203,6 +299,7 @@ JanusGuard基于以下核心技术：
    * 网络流量监控
    * 动态类加载监控 ✓
    * 内存木马检测 ✓
+   * 命令执行保护增强 ✓
    * 高性能事件处理
    * 规则引擎设计
    
@@ -233,5 +330,5 @@ JanusGuard基于以下核心技术：
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by the Shallow Ignore Team</sub>
+  <sub>Built with ❤️ by the JanusGuard Team</sub>
 </div> 

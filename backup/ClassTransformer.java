@@ -88,47 +88,39 @@ public class ClassTransformer implements ClassFileTransformer {
         JNIInterceptor.setEventProcessor(eventProcessor);
         
         // 创建ByteBuddy AgentBuilder
-        logger.info("初始化ByteBuddy...");
-        agentBuilder = createAgentBuilder();
+        agentBuilder = new AgentBuilder.Default()
+                .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
+                .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
+                .with(new AgentBuilder.Listener.Adapter() {
+                    @Override
+                    public void onTransformation(TypeDescription typeDescription, 
+                                                 ClassLoader classLoader, 
+                                                 JavaModule module,
+                                                 boolean loaded,
+                                                 DynamicType dynamicType) {
+                        logger.debug("Transformed class: {}", typeDescription.getName());
+                    }
+                    
+                    @Override
+                    public void onError(String typeName, 
+                                       ClassLoader classLoader, 
+                                       JavaModule module,
+                                       boolean loaded, 
+                                       Throwable throwable) {
+                        logger.error("Error transforming class {}: {}", typeName, throwable.getMessage(), throwable);
+                    }
+                    
+                    @Override
+                    public void onIgnored(TypeDescription typeDescription, 
+                                         ClassLoader classLoader, 
+                                         JavaModule module,
+                                         boolean loaded) {
+                        logger.trace("Ignored class: {}", typeDescription.getName());
+                    }
+                });
         
         // 配置基本转换规则
         initializeTransformRules();
-    }
-    
-    /**
-     * 创建通用的AgentBuilder
-     */
-    private AgentBuilder createAgentBuilder() {
-        return new AgentBuilder.Default()
-                .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
-                .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
-                .with(AgentBuilder.InitializationStrategy.NoOp.INSTANCE)
-                .with(new AgentBuilder.Listener() {
-                    // 完善方法签名以匹配ByteBuddy 1.9.16
-                    public void onTransformation(TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, boolean loaded, DynamicType dynamicType) {
-                        logger.debug("Transform: {} [{}]", typeDescription.getName(), classLoader);
-                    }
-                    
-                    // 完善方法签名以匹配ByteBuddy 1.9.16
-                    public void onError(String typeName, ClassLoader classLoader, JavaModule module, boolean loaded, Throwable throwable) {
-                        logger.error("Error transforming: {} [{}]", typeName, classLoader, throwable);
-                    }
-                    
-                    // 完善方法签名以匹配ByteBuddy 1.9.16
-                    public void onIgnored(TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, boolean loaded) {
-                        logger.trace("Ignoring: {} [{}]", typeDescription.getName(), classLoader);
-                    }
-                    
-                    // 修复方法签名，已存在loaded参数
-                    public void onComplete(String typeName, ClassLoader classLoader, JavaModule module, boolean loaded) {
-                        logger.trace("Completed: {} [{}]", typeName, classLoader);
-                    }
-
-                    // 完善方法签名以匹配ByteBuddy 1.9.16
-                    public void onDiscovery(String typeName, ClassLoader classLoader, JavaModule module, boolean loaded) {
-                        logger.trace("Discovered: {} [{}]", typeName, classLoader);
-                    }
-                });
     }
     
     /**
@@ -143,16 +135,16 @@ public class ClassTransformer implements ClassFileTransformer {
         if (config.getBoolean("monitors.command-execution.enabled", true)) {
             logger.info("Command execution monitoring enabled");
             
-            // 为Runtime.exec添加转换（修复兼容性）
+            // 为Runtime.exec添加转换
             localBuilder = localBuilder.type(ElementMatchers.named("java.lang.Runtime"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.named("exec"))
                                .intercept(MethodDelegation.to(CommandExecutionInterceptor.class))
                     );
             
-            // 为ProcessBuilder.start添加转换（修复兼容性）
+            // 为ProcessBuilder.start添加转换
             localBuilder = localBuilder.type(ElementMatchers.named("java.lang.ProcessBuilder"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.named("start"))
                                .intercept(MethodDelegation.to(CommandExecutionInterceptor.class))
                     );
@@ -162,27 +154,27 @@ public class ClassTransformer implements ClassFileTransformer {
         if (config.getBoolean("monitors.file-operations.enabled", true)) {
             logger.info("File operations monitoring enabled");
             
-            // 为FileInputStream添加转换（修复兼容性）
+            // 为FileInputStream添加转换
             localBuilder = localBuilder.type(ElementMatchers.named("java.io.FileInputStream"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.constructor(ElementMatchers.any())
                                .intercept(MethodDelegation.to(FileOperationInterceptor.class))
                                .method(ElementMatchers.named("read"))
                                .intercept(MethodDelegation.to(FileOperationInterceptor.class))
                     );
             
-            // 为FileOutputStream添加转换（修复兼容性）
+            // 为FileOutputStream添加转换
             localBuilder = localBuilder.type(ElementMatchers.named("java.io.FileOutputStream"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.constructor(ElementMatchers.any())
                                .intercept(MethodDelegation.to(FileOperationInterceptor.class))
                                .method(ElementMatchers.named("write"))
                                .intercept(MethodDelegation.to(FileOperationInterceptor.class))
                     );
             
-            // 为RandomAccessFile添加转换（修复兼容性）
+            // 为RandomAccessFile添加转换
             localBuilder = localBuilder.type(ElementMatchers.named("java.io.RandomAccessFile"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.constructor(ElementMatchers.any())
                                .intercept(MethodDelegation.to(FileOperationInterceptor.class))
                                .method(ElementMatchers.nameStartsWith("read").or(ElementMatchers.nameStartsWith("write")))
@@ -190,35 +182,35 @@ public class ClassTransformer implements ClassFileTransformer {
                     );
         }
         
-        // 监控反射操作
+        // 监控反射调用
         if (config.getBoolean("monitors.reflection.enabled", true)) {
             logger.info("Reflection monitoring enabled");
             
-            // 为Method.invoke添加转换（修复兼容性）
+            // 为Method.invoke添加转换
             localBuilder = localBuilder.type(ElementMatchers.named("java.lang.reflect.Method"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.named("invoke"))
                                .intercept(MethodDelegation.to(ReflectionInterceptor.class))
                     );
         }
         
-        // 监控内存木马 - 类加载
+        // 监控ClassLoader.defineClass - 内存木马注入检测
         if (config.getBoolean("monitors.memory-trojan.class-loading.enabled", true)) {
             logger.info("Memory trojan class loading monitoring enabled");
             
             localBuilder = localBuilder.type(ElementMatchers.isSubTypeOf(ClassLoader.class))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.nameStartsWith("defineClass"))
                                .intercept(MethodDelegation.to(ClassLoaderInterceptor.class))
                     );
         }
         
-        // 监控内存木马 - Unsafe操作
+        // 监控Unsafe内存操作 - 内存木马注入检测
         if (config.getBoolean("monitors.memory-trojan.unsafe.enabled", true)) {
             logger.info("Memory trojan Unsafe operations monitoring enabled");
             
             localBuilder = localBuilder.type(ElementMatchers.named("sun.misc.Unsafe"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.anyOf(
                                 ElementMatchers.named("putAddress"),
                                 ElementMatchers.named("putObject"),
@@ -232,29 +224,29 @@ public class ClassTransformer implements ClassFileTransformer {
                     );
         }
         
-        // 监控内存木马 - 动态代理
+        // 监控动态代理 - 内存木马注入检测
         if (config.getBoolean("monitors.memory-trojan.dynamic-proxy.enabled", true)) {
             logger.info("Memory trojan dynamic proxy monitoring enabled");
             
             localBuilder = localBuilder.type(ElementMatchers.named("java.lang.reflect.Proxy"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.named("newProxyInstance"))
                                .intercept(MethodDelegation.to(DynamicProxyInterceptor.class))
                     );
         }
         
-        // 监控内存木马 - JNI操作
+        // 监控JNI操作 - 内存木马注入检测
         if (config.getBoolean("monitors.memory-trojan.jni.enabled", true)) {
             logger.info("Memory trojan JNI operations monitoring enabled");
             
             localBuilder = localBuilder.type(ElementMatchers.named("java.lang.System"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.named("load").or(ElementMatchers.named("loadLibrary")))
                                .intercept(MethodDelegation.to(JNIInterceptor.class))
                     );
             
             localBuilder = localBuilder.type(ElementMatchers.named("java.lang.Runtime"))
-                    .transform((builder, typeDescription, classLoader, protectionDomain) -> 
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.named("load").or(ElementMatchers.named("loadLibrary")))
                                .intercept(MethodDelegation.to(JNIInterceptor.class))
                     );
@@ -345,7 +337,7 @@ public class ClassTransformer implements ClassFileTransformer {
     }
     
     /**
-     * 获取缓存大小
+     * 获取转换缓存大小
      * 
      * @return 缓存中的类数量
      */
@@ -354,7 +346,7 @@ public class ClassTransformer implements ClassFileTransformer {
     }
     
     /**
-     * 清空缓存
+     * 清除转换缓存
      */
     public void clearCache() {
         transformCache.clear();

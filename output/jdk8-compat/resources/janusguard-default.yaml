@@ -1,0 +1,87 @@
+# JanusGuard 默认配置文件
+
+# Agent基本配置
+agent:
+  name: JanusGuard
+  version: 1.0.0
+  enabled: true
+  log-level: INFO
+
+# 监控点配置
+monitors:
+  # 命令执行监控
+  command-execution:
+    enabled: true
+    classes:
+      - java.lang.Runtime
+      - java.lang.ProcessBuilder
+    methods:
+      - exec
+      - start
+    sampling-rate: 1.0
+
+  # 文件操作监控  
+  file-operations:
+    enabled: true
+    classes:
+      - java.io.FileInputStream
+      - java.io.FileOutputStream
+      - java.io.RandomAccessFile
+    methods:
+      - "<init>"
+      - read
+      - write
+    sampling-rate: 0.5
+    
+  # 反射调用监控
+  reflection:
+    enabled: true
+    classes:
+      - java.lang.reflect.Method
+    methods:
+      - invoke
+    sampling-rate: 0.3
+
+# 字节码转换配置
+transformer:
+  cache-size: 1000
+  excluded-packages:
+    - java.lang
+    - sun.
+    - com.sun.
+    - com.janusguard.
+  included-packages:
+    - com.example.
+    - org.apache.
+    - java.io.
+
+# 事件处理配置
+event-processing:
+  queue-size: 10000
+  batch-size: 100
+  flush-interval-ms: 5000
+
+# 数据上报配置
+reporting:
+  enabled: true
+  mode: file  # file, http, grpc
+  file:
+    path: ./logs/janusguard-events.log
+    max-size: 100MB
+    max-files: 10
+  http:
+    url: http://localhost:8080/events
+    headers:
+      Content-Type: application/json
+    retry-count: 3
+    connection-timeout-ms: 3000
+  grpc:
+    host: localhost
+    port: 9090
+    use-tls: false
+
+# 规则引擎配置
+rules:
+  path: ./rules/
+  reload-interval-sec: 60
+  default-alert-level: WARNING 
