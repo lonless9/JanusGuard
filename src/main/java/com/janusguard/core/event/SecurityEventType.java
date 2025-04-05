@@ -57,6 +57,16 @@ public enum SecurityEventType {
     JNI_OPERATION,
     
     /**
+     * JVM内存操作，例如Unsafe类操作
+     */
+    JVM_MEMORY_OPERATION,
+    
+    /**
+     * 动态代理创建
+     */
+    DYNAMIC_PROXY,
+    
+    /**
      * 未知类型
      */
     UNKNOWN

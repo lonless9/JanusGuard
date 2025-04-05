@@ -8,6 +8,23 @@ group = 'com.janusguard'
 version = '1.0.0-SNAPSHOT'
 sourceCompatibility = '1.8'
 
+// 明确指定源代码目录
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+    }
+}
+
 repositories {
     mavenCentral()
 }

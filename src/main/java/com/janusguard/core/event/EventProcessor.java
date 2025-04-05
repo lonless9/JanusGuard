@@ -141,6 +141,31 @@ public class EventProcessor {
             event.setSeverity(SecurityEventSeverity.MEDIUM);
         }
         
+        // 为内存木马相关操作设置高优先级
+        else if (event.getType() == SecurityEventType.CLASS_LOADING || 
+                event.getType() == SecurityEventType.JVM_MEMORY_OPERATION ||
+                event.getType() == SecurityEventType.JNI_OPERATION) {
+            event.setSeverity(SecurityEventSeverity.HIGH);
+            
+            // 如果事件中标记了可疑活动，记录告警
+            if (event.getData("memoryTrojanSuspicious") != null || 
+                event.getData("dangerousOperation") != null ||
+                event.getData("suspiciousJNI") != null) {
+                logger.warn("检测到可能的内存木马活动: {}", event);
+            }
+        }
+        
+        // 为动态代理设置中等优先级
+        else if (event.getType() == SecurityEventType.DYNAMIC_PROXY) {
+            event.setSeverity(SecurityEventSeverity.MEDIUM);
+            
+            // 如果检测到可疑代理，提高严重级别
+            if (event.getData("suspiciousProxy") != null) {
+                event.setSeverity(SecurityEventSeverity.HIGH);
+                logger.warn("检测到可疑动态代理: {}", event);
+            }
+        }
+        
         // 为其他类型设置低优先级
         else {
             event.setSeverity(SecurityEventSeverity.LOW);

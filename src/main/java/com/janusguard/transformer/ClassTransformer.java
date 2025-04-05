@@ -18,6 +18,10 @@ import com.janusguard.core.event.EventProcessor;
 import com.janusguard.transformer.interceptor.CommandExecutionInterceptor;
 import com.janusguard.transformer.interceptor.FileOperationInterceptor;
 import com.janusguard.transformer.interceptor.ReflectionInterceptor;
+import com.janusguard.transformer.interceptor.ClassLoaderInterceptor;
+import com.janusguard.transformer.interceptor.UnsafeInterceptor;
+import com.janusguard.transformer.interceptor.DynamicProxyInterceptor;
+import com.janusguard.transformer.interceptor.JNIInterceptor;
 
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.description.type.TypeDescription;
@@ -77,6 +81,11 @@ public class ClassTransformer implements ClassFileTransformer {
         CommandExecutionInterceptor.setEventProcessor(eventProcessor);
         FileOperationInterceptor.setEventProcessor(eventProcessor);
         ReflectionInterceptor.setEventProcessor(eventProcessor);
+        // 设置新拦截器的事件处理器
+        ClassLoaderInterceptor.setEventProcessor(eventProcessor);
+        UnsafeInterceptor.setEventProcessor(eventProcessor);
+        DynamicProxyInterceptor.setEventProcessor(eventProcessor);
+        JNIInterceptor.setEventProcessor(eventProcessor);
         
         // 创建ByteBuddy AgentBuilder
         agentBuilder = new AgentBuilder.Default()
@@ -182,6 +191,64 @@ public class ClassTransformer implements ClassFileTransformer {
                     .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
                         builder.method(ElementMatchers.named("invoke"))
                                .intercept(MethodDelegation.to(ReflectionInterceptor.class))
+                    );
+        }
+        
+        // 监控ClassLoader.defineClass - 内存木马注入检测
+        if (config.getBoolean("monitors.memory-trojan.class-loading.enabled", true)) {
+            logger.info("Memory trojan class loading monitoring enabled");
+            
+            localBuilder = localBuilder.type(ElementMatchers.isSubTypeOf(ClassLoader.class))
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
+                        builder.method(ElementMatchers.nameStartsWith("defineClass"))
+                               .intercept(MethodDelegation.to(ClassLoaderInterceptor.class))
+                    );
+        }
+        
+        // 监控Unsafe内存操作 - 内存木马注入检测
+        if (config.getBoolean("monitors.memory-trojan.unsafe.enabled", true)) {
+            logger.info("Memory trojan Unsafe operations monitoring enabled");
+            
+            localBuilder = localBuilder.type(ElementMatchers.named("sun.misc.Unsafe"))
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
+                        builder.method(ElementMatchers.anyOf(
+                                ElementMatchers.named("putAddress"),
+                                ElementMatchers.named("putObject"),
+                                ElementMatchers.named("allocateInstance"),
+                                ElementMatchers.named("defineClass"),
+                                ElementMatchers.named("defineAnonymousClass"),
+                                ElementMatchers.named("allocateMemory"),
+                                ElementMatchers.named("copyMemory")
+                            ))
+                            .intercept(MethodDelegation.to(UnsafeInterceptor.class))
+                    );
+        }
+        
+        // 监控动态代理 - 内存木马注入检测
+        if (config.getBoolean("monitors.memory-trojan.dynamic-proxy.enabled", true)) {
+            logger.info("Memory trojan dynamic proxy monitoring enabled");
+            
+            localBuilder = localBuilder.type(ElementMatchers.named("java.lang.reflect.Proxy"))
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
+                        builder.method(ElementMatchers.named("newProxyInstance"))
+                               .intercept(MethodDelegation.to(DynamicProxyInterceptor.class))
+                    );
+        }
+        
+        // 监控JNI操作 - 内存木马注入检测
+        if (config.getBoolean("monitors.memory-trojan.jni.enabled", true)) {
+            logger.info("Memory trojan JNI operations monitoring enabled");
+            
+            localBuilder = localBuilder.type(ElementMatchers.named("java.lang.System"))
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
+                        builder.method(ElementMatchers.named("load").or(ElementMatchers.named("loadLibrary")))
+                               .intercept(MethodDelegation.to(JNIInterceptor.class))
+                    );
+            
+            localBuilder = localBuilder.type(ElementMatchers.named("java.lang.Runtime"))
+                    .transform((builder, typeDescription, classLoader, javaModule, protectionDomain) -> 
+                        builder.method(ElementMatchers.named("load").or(ElementMatchers.named("loadLibrary")))
+                               .intercept(MethodDelegation.to(JNIInterceptor.class))
                     );
         }
         

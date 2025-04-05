@@ -48,6 +48,15 @@ public final class AgentConstants {
         
         // 网络操作
         public static final String NETWORK_OPERATION = "network_operation";
+        
+        // JVM内存操作
+        public static final String JVM_MEMORY_OPERATION = "jvm_memory_operation";
+        
+        // 动态代理
+        public static final String DYNAMIC_PROXY = "dynamic_proxy";
+        
+        // JNI操作
+        public static final String JNI_OPERATION = "jni_operation";
     }
     
     /**
@@ -79,6 +88,20 @@ public final class AgentConstants {
         public static final String REMOTE_HOST = "remote_host";
         public static final String REMOTE_PORT = "remote_port";
         public static final String PROTOCOL = "protocol";
+        
+        // 内存木马相关字段
+        public static final String MEMORY_TROJAN_SUSPICIOUS = "memoryTrojanSuspicious";
+        public static final String UNSAFE_METHOD = "unsafeMethod";
+        public static final String DANGEROUS_OPERATION = "dangerousOperation";
+        public static final String CLASS_LOADER = "classLoader";
+        public static final String CODE_SOURCE = "codeSource";
+        public static final String LOADED_CLASS_NAME = "loadedClassName";
+        public static final String CLASS_PACKAGE = "classPackage";
+        public static final String CLASS_MODIFIERS = "classModifiers";
+        public static final String PROXY_INTERFACES = "interfaces";
+        public static final String SUSPICIOUS_PROXY = "suspiciousProxy";
+        public static final String LIBRARY_PATH = "libraryPath";
+        public static final String SUSPICIOUS_JNI = "suspiciousJNI";
     }
     
     /**
@@ -99,6 +122,13 @@ public final class AgentConstants {
         public static final String MONITOR_FILE_OPERATIONS_ENABLED = "monitors.file-operations.enabled";
         public static final String MONITOR_REFLECTION_ENABLED = "monitors.reflection.enabled";
         
+        // 内存木马监控配置
+        public static final String MONITOR_MEMORY_TROJAN_ENABLED = "monitors.memory-trojan.enabled";
+        public static final String MONITOR_CLASS_LOADING_ENABLED = "monitors.memory-trojan.class-loading.enabled";
+        public static final String MONITOR_UNSAFE_ENABLED = "monitors.memory-trojan.unsafe.enabled";
+        public static final String MONITOR_DYNAMIC_PROXY_ENABLED = "monitors.memory-trojan.dynamic-proxy.enabled";
+        public static final String MONITOR_JNI_ENABLED = "monitors.memory-trojan.jni.enabled";
+        
         // 事件处理配置
         public static final String EVENT_QUEUE_SIZE = "event-processing.queue-size";
         public static final String EVENT_BATCH_SIZE = "event-processing.batch-size";
@@ -108,5 +138,25 @@ public final class AgentConstants {
         public static final String REPORTING_ENABLED = "reporting.enabled";
         public static final String REPORTING_MODE = "reporting.mode";
         public static final String REPORTING_FILE_PATH = "reporting.file.path";
+    }
+    
+    /**
+     * 内存木马检测相关常量
+     */
+    public static final class MemoryTrojanDetection {
+        // 可疑类加载
+        public static final String SUSPICIOUS_CLASS_LOADING = "suspicious_class_loading";
+        
+        // 危险Unsafe操作
+        public static final String DANGEROUS_UNSAFE_OPERATION = "dangerous_unsafe_operation";
+        
+        // 可疑动态代理
+        public static final String SUSPICIOUS_PROXY_CREATION = "suspicious_proxy_creation";
+        
+        // 可疑JNI操作
+        public static final String SUSPICIOUS_JNI_OPERATION = "suspicious_jni_operation";
+        
+        // 告警原因
+        public static final String REASON = "reason";
     }
 } 

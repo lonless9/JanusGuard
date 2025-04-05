@@ -1,0 +1,117 @@
+# JanusGuard 内存木马监控配置示例
+
+# 内存木马监控主配置
+monitors:
+  memory-trojan:
+    # 总体启用开关
+    enabled: true
+    
+    # 监控采样率 (0-100)
+    sampling-rate: 100
+    
+    # 日志级别 (DEBUG, INFO, WARN, ERROR)
+    log-level: INFO
+    
+    # 告警阈值
+    alert-threshold: HIGH
+    
+    # 类加载监控
+    class-loading:
+      enabled: true
+      # 关注的可疑类名模式（正则表达式）
+      suspicious-patterns:
+        - ".*\\$\\$.*"
+        - ".*[0-9a-f]{8,}.*"
+        - "sun\\..*"
+        - "jdk\\.internal\\..*"
+      # 忽略的安全类名（防止误报）
+      ignore-patterns:
+        - "com\\.janusguard\\..*"
+        - "org\\.springframework\\..*"
+        - "org\\.hibernate\\..*"
+    
+    # Unsafe内存操作监控
+    unsafe:
+      enabled: true
+      # 监控的方法列表
+      monitored-methods:
+        - "putAddress"
+        - "putObject"
+        - "allocateInstance"
+        - "defineClass"
+        - "defineAnonymousClass"
+        - "allocateMemory"
+        - "copyMemory"
+      # 是否阻止危险操作（设为true将阻止而不是仅监控）
+      block-dangerous: false
+    
+    # 动态代理监控
+    dynamic-proxy:
+      enabled: true
+      # 检测危险代理接口
+      suspicious-interfaces:
+        - "java.rmi."
+        - "javax.management."
+        - "java.lang.ClassLoader"
+      # 堆栈关键字检测
+      suspicious-stack-keywords:
+        - "exploit"
+        - "payload"
+        - "gadget"
+        - "deserialize"
+    
+    # JNI操作监控
+    jni:
+      enabled: true
+      # 可疑库路径模式
+      suspicious-paths:
+        - "/tmp/.*"
+        - ".*Temp.*"
+        - ".*[0-9a-f]{8,}.*"
+        - ".*hack.*"
+        - ".*exploit.*"
+      # 库路径白名单
+      whitelist-paths:
+        - "/usr/lib/.*"
+        - "/lib/.*"
+        - "/opt/.*"
+
+# 日志与告警配置
+alerts:
+  # 是否启用告警
+  enabled: true
+  
+  # 告警方式
+  methods:
+    # 日志告警
+    log:
+      enabled: true
+      file: "./logs/memory_trojan_alerts.log"
+      
+    # HTTP告警（可配置发送至安全中心）
+    http:
+      enabled: false
+      url: "https://security-center.example.com/api/alerts"
+      auth-token: "your-token-here"
+      
+    # 命令行告警
+    console:
+      enabled: true
+      
+# 预防与响应配置
+response:
+  # 自动阻止高危操作
+  auto-block:
+    enabled: false
+    # 阻止类型
+    types:
+      - "UNSAFE_OPERATION"
+      - "SUSPICIOUS_JNI"
+  
+  # 记录详细证据
+  evidence-collection:
+    enabled: true
+    collect-stack-trace: true
+    # 保存类字节码用于分析
+    save-bytecode: true
+    bytecode-dir: "./evidence/bytecode/" 
