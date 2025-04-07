@@ -1,4 +1,4 @@
-#🛡️JanusGuard
+# 🛡️JanusGuard
 
 <div align="center">
   <img src="https://img.shields.io/badge/Java-8%2B-orange" alt="Java 8+">
@@ -12,8 +12,6 @@
 ## 📋 概述
 
 JanusGuard是一个Java应用运行时安全监控系统，通过Java Agent技术和字节码转换实现对应用行为的监控和安全风险检测，旨在提供一种低侵入、可配置的安全防护方案。它能够监控和防御各种运行时安全威胁，包括命令注入、文件操作风险以及内存木马攻击。
-
-## 开发团队
 
 ## 🔍 核心理念
 
